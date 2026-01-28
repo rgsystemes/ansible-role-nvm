@@ -27,7 +27,10 @@
 - name: test to ensure symbiotic variables are declared | nvm_dir AND nvm_profile
   ansible.builtin.fail:
     msg: "If setting a custom nvm_dir directory e.g. /opt/nvm, nvm_dir MUST be used in combination with nvm_profile"
-  when: nvm_dir and nvm_profile == '.bashrc' and nvm_install != 'git'
+  when: 
+    - nvm_dir | length > 0
+    - nvm_profile == '.bashrc'
+    - nvm_install != 'git'
 
 - name: test to ensure symbiotic variables are declared | nvm_dir AND nvm_install = git
   ansible.builtin.fail:
@@ -99,9 +102,7 @@
 
     - name: Create profile file if it does not exist
       ansible.builtin.file:
-        group: "{{ ansible_become_user | default(ansible_user) }}"
-        owner: "{{ ansible_become_user | default(ansible_user) }}"
-        mode: 0777
+        mode: '0644'
         path: "{{ nvm_profile }}"
         state: touch
       when: not mg_profile_file.stat.exists
