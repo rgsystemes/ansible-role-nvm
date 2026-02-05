@@ -4,7 +4,7 @@
   become: true
 
   vars:
-    default:true
+    default: true
 
   roles:
-    - name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}"
+    - role: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}"

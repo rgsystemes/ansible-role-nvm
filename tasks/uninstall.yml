@@ -1,7 +1,7 @@
 ---
 - name: Uninstall
   block:
-    - name: find .nvm path
+    - name: Find .nvm path
       ansible.builtin.shell: "{{ mg_user_shell.command }} + ' printenv NVM_DIR'"
       register: mg_remote_nvm_path
       changed_when: "mg_remote_nvm_path.rc != 0"
@@ -27,15 +27,18 @@
         state: absent
 
 - name: Clean_install
+  when: clean_install
   block:
-    # find any directory that has nvm in it e.g. /.nvm or /nvm etc. 
+    # find any directory that has nvm in it e.g. /.nvm or /nvm etc.
     # exclude any path that contains linux
     # ignore anything that has "Permission denied" in the response and then
     # direct it to stdout >&1
     # if there is a match force the correct .rc code e.g. .rc = 0
     # ignore_errors is there for when there is no match and the wrong .rc code is returned
-    - name: check folders that match nvm
-      ansible.builtin.raw: "find / -type d -not \\( -path **/linux** -prune \\) -regex '.*/.nvm' 2>&1 | { grep -v \"Permission denied\" >&1; [ $? -eq 0 ]; }"
+    - name: Check folders that match nvm
+      ansible.builtin.raw: >
+        find / -type d -not \\( -path **/linux** -prune \\) -regex '.*/.nvm' 2>&1
+        | { grep -v \"Permission denied\" >&1; [ $? -eq 0 ]; }
       register: nvm_dir_possible_locations
       ignore_errors: true
       changed_when:
@@ -58,8 +61,11 @@
     # I = ignore binary files
     # -- we will look for NVM in the normal places
     # ignore_errors is there for when there is no match and the wrong .rc code is returned
-    - name: check files in /home, /etc and /root custom_nvm_directory and custom nvm_profile for nvm related stuff
-      ansible.builtin.raw: "grep -rwslI -E \"^export.+nvm|\\[.+nvm(\\sbash_completion)?\" /home /etc /root {{ nvm_dir }} {{ nvm_profile }} --include=.*{shrc,profile} >&1; [ $? -eq 0 ];"
+    - name: Check files for nvm related stuff
+      ansible.builtin.raw: >
+        grep -rwslI -E \"^export.+nvm|\\[.+nvm(\\sbash_completion)?\"
+        /home /etc /root {{ nvm_dir }} {{ nvm_profile }}
+        --include=.*{shrc,profile} >&1; [ $? -eq 0 ];
       register: nvm_shell_possible_locations
       ignore_errors: true
       changed_when:
@@ -74,4 +80,3 @@
         state: absent
       loop: "{{ nvm_shell_possible_locations.stdout_lines }}"
       when: nvm_shell_possible_locations.stdout_lines | length > 0
-  when: clean_install
